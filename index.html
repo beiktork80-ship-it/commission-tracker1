@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>پیگیری قرارداد و کمیسیون</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <meta name="theme-color" content="#111827"/>
+  <link rel="icon" href="./icons/icon-192.png">
+  <style>
+    body{font-family:sans-serif;background:#0f172a;color:#e5e7eb;margin:0}
+    header{position:sticky;top:0;background:#111827;padding:12px 16px;box-shadow:0 2px 6px rgba(0,0,0,.3);z-index:2}
+    h1{font-size:18px;margin:0}
+    main{padding:16px;max-width:900px;margin:0 auto}
+    .tabs{display:flex;gap:8px;margin:12px 0}
+    .tab{flex:1;text-align:center;padding:10px;border-radius:10px;background:#1f2937;cursor:pointer}
+    .tab.active{background:#334155;font-weight:bold}
+    .card{background:#1f2937;border-radius:12px;padding:12px;margin:10px 0}
+    label{display:block;margin:8px 0 4px}
+    input,select,textarea{width:100%;padding:10px;border-radius:10px;border:1px solid #334155;background:#0b1220;color:#e5e7eb}
+    button{padding:12px;border:0;border-radius:10px;background:#2563eb;color:white;width:100%;margin-top:10px}
+    .row{display:flex;gap:10px}
+    .row>*{flex:1}
+    .muted{opacity:.8;font-size:12px}
+    .list-item{padding:10px;border-bottom:1px dashed #334155}
+    .danger{background:#ef4444}
+    .secondary{background:#475569}
+    footer{padding:30px;text-align:center;color:#94a3b8}
+    canvas{max-width:100%;background:#0b1220;padding:10px;border-radius:12px}
+    #err{position:fixed;bottom:12px;left:12px;right:12px;background:#7f1d1d;color:#fecaca;padding:10px;border-radius:10px;display:none}
+    .ok{background:#14532d;color:#bbf7d0}
+    .row-buttons{display:flex; gap:10px; margin-top:8px}
+  </style>
+</head>
+<body>
+<header><h1>پیگیری قرارداد و کمیسیون</h1></header>
+<main>
+  <nav class="tabs">
+    <div id="tab-add" class="tab active">ثبت</div>
+    <div id="tab-daily" class="tab">روزانه</div>
+    <div id="tab-report" class="tab">گزارش</div>
+  </nav>
+
+  <section id="view-add" class="card">
+    <h2 style="margin-top:0">ثبت قرارداد روزانه</h2>
+    <div class="row">
+      <div><label>شماره قرارداد</label><input id="contractNumber" placeholder="CT-2025-001"></div>
+      <div><label>مبلغ (EUR)</label><input id="amount" inputmode="decimal" placeholder="1200.50"></div>
+    </div>
+    <label>مشتری</label><input id="customer" placeholder="نام مشتری">
+    <div class="row">
+      <div><label>کنترل توسط</label><input id="controlledBy" placeholder="نام کنترل کننده"></div>
+      <div><label>تاریخ کنترل</label><input id="controlDate" type="date"></div>
+    </div>
+    <label>نتیجه نصب</label>
+    <div class="row">
+      <select id="installResult">
+        <option value="">نامشخص</option><option value="ok">بدون مشکل</option><option value="change">نیاز به تغییرات</option>
+      </select>
+      <input id="assemblyTeam" placeholder="تیم مونتاژ">
+    </div>
+    <div class="row">
+      <div><label>تاریخ ارسال</label><input id="shipDate" type="date"></div>
+      <div><label>تاریخ نصب</label><input id="installDate" type="date"></div>
+    </div>
+    <label>یادداشت</label><textarea id="notes" rows="2" placeholder="توضیحات..."></textarea>
+    <button id="saveBtn">ثبت</button>
+    <div class="muted">تاریخ ثبت: خودکار امروز</div>
+    <div class="row-buttons">
+      <button class="secondary" id="enableNotifyBtn">فعال‌سازی اعلان روزانه 22:00</button>
+      <button class="secondary" id="calendarBtn">افزودن یادآور روزانه به تقویم</button>
+    </div>
+  </section>
+
+  <section id="view-daily" class="card" style="display:none">
+    <h2 style="margin-top:0">لیست روزانه</h2>
+    <div class="row">
+      <div><label>تاریخ (روز)</label><input id="dailyDate" type="date"></div>
+      <div><label>جمع امروز (EUR)</label><input id="dailyTotal" disabled></div>
+    </div>
+    <div id="dailyList" class="card" style="margin:10px 0 0"></div>
+  </section>
+
+  <section id="view-report" class="card" style="display:none">
+    <h2 style="margin-top:0">گزارش ماهانه</h2>
+    <div class="row">
+      <div><label>ماه</label><input id="reportMonth" type="month"></div>
+      <div><label>جمع ماه (EUR)</label><input id="monthSum" disabled></div>
+    </div>
+    <div class="row-buttons">
+      <button id="csvBtn" class="secondary">دریافت CSV این ماه</button>
+      <button id="xlsBtn" class="secondary">دریافت Excel (XLS)</button>
+    </div>
+    <canvas id="chart" height="240"></canvas>
+    <canvas id="chartFallback" height="240" style="display:none"></canvas>
+  </section>
+
+  <footer>نسخهٔ PWA — آفلاین — داده‌ها روی گوشی شما ذخیره می‌شود.</footer>
+</main>
+
+<div id="err"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="./app.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+  }
+</script>
+</body>
+</html>
